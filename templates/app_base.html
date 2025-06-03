@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}VK Classifier App{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            600: '#2563EB',
+                            700: '#1D4ED8',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+            color: #1E293B;
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            color: #2563EB;
+            transform: translateY(-1px);
+        }
+        .active-link {
+            color: #2563EB;
+            font-weight: 600;
+        }
+        #mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        #mobile-menu.active {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen animate-fade-in">
+
+    <!-- Лоадер -->
+    <div id="loader" class="fixed inset-0 bg-white z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+
+    <!-- Навбар -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-50 transition-all">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <a href="/" class="flex items-center group">
+                        <i class="fab fa-vk text-2xl text-blue-500 group-hover:text-blue-600 transition-colors"></i>
+                        <span class="text-xl font-bold ml-2 group-hover:text-blue-600 transition-colors">VK Classifier</span>
+                    </a>
+                </div>
+                
+                <!-- Десктопное меню -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/app" class="nav-link {% if request.path == '/app' %}active-link{% endif %}">
+                        <i class="fas fa-home mr-1"></i> Главная
+                    </a>
+                    <a href="/app/classify" class="nav-link {% if request.path == '/app/classify' %}active-link{% endif %}">
+                        <i class="fas fa-project-diagram mr-1"></i> Классификатор
+                    </a>
+                    <a href="/app/categories" class="nav-link {% if request.path == '/app/categories' %}active-link{% endif %}">
+                        <i class="fas fa-filter mr-1"></i> Фильтры
+                    </a>
+                </div>
+                
+                <!-- Кнопка мобильного меню -->
+                <button id="mobile-menu-button" class="md:hidden text-gray-500 hover:text-blue-600 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Мобильное меню -->
+            <div id="mobile-menu" class="md:hidden px-4 overflow-hidden">
+                <div class="flex flex-col space-y-3 py-3">
+                    <a href="/app" class="nav-link {% if request.path == '/app' %}active-link{% endif %}">
+                        <i class="fas fa-home mr-2"></i> Главная
+                    </a>
+                    <a href="/app/classify" class="nav-link {% if request.path == '/app/classify' %}active-link{% endif %}">
+                        <i class="fas fa-project-diagram mr-2"></i> Классификатор
+                    </a>
+                    <a href="/app/categories" class="nav-link {% if request.path == '/app/categories' %}active-link{% endif %}">
+                        <i class="fas fa-filter mr-2"></i> Фильтры
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Контент -->
+    <main class="flex-grow py-8 px-4 max-w-4xl mx-auto w-full">
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 transition-all duration-300">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Футер -->
+    <footer class="bg-white/80 backdrop-blur-md border-t py-4 mt-8 text-center text-sm text-gray-500">
+        <p>© 2025 VK Classifier — Анализ аудитории ВКонтакте</p>
+    </footer>
+
+    <!-- Скрипты -->
+    <script>
+        // Мобильное меню
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('active');
+        });
+
+        // Плавные переходы
+        document.querySelectorAll('a').forEach(link => {
+            if (!link.href.includes('#')) {
+                link.addEventListener('click', function(e) {
+                    if (link.target === '_blank') return;
+                    e.preventDefault();
+                    document.getElementById('loader').style.opacity = '1';
+                    document.getElementById('loader').style.pointerEvents = 'all';
+                    setTimeout(() => {
+                        window.location.href = link.href;
+                    }, 300);
+                });
+            }
+        });
+
+        // Закрытие мобильного меню при клике на ссылку
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', function() {
+                document.getElementById('mobile-menu').classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+{% extends "app_base.html" %}
+
+{% block title %}Классификация — VK Classifier{% endblock %}
+
+{% block content %}
+<!-- Видеофон -->
+<video autoplay muted loop class="fixed top-0 left-0 w-full h-full object-cover z-0">
+    <source src="{{ url_for('static', filename='videos/v1.mp4') }}" type="video/mp4">
+</video>
+
+<!-- Затемнение фона -->
+<div class="fixed inset-0 bg-black/60 z-0"></div>
+
+<!-- Боковая панель помощи (десктоп) -->
+<div class="fixed left-4 top-1/2 transform -translate-y-1/2 z-20 hidden lg:block">
+    <button id="helpToggle" class="mb-2 p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
+        <i class="fas fa-question text-white text-xl"></i>
+    </button>
+
+    <div id="helpCard" class="w-72 bg-gray-900/90 backdrop-blur-lg rounded-xl p-5 border border-purple-500/30 shadow-xl transform transition-all duration-300 opacity-0 -translate-x-10">
+        <div class="flex items-start mb-4">
+            <i class="fas fa-info-circle text-purple-300 text-xl mr-3"></i>
+            <h3 class="font-bold text-lg text-white">Как использовать</h3>
+        </div>
+        <ol class="list-decimal list-inside space-y-3 text-sm text-white/90">
+            <li>Загрузите <strong>файл с подписчиками</strong> (формат Excel)</li>
+            <li>Добавьте одну или несколько <strong>групп для сравнения</strong> (и укажите метки)</li>
+            <li>Нажмите <strong>"Классифицировать"</strong> для запуска анализа</li>
+            <li>Результат будет скачен автоматически</li>
+        </ol>
+        <div class="mt-4 pt-3 border-t border-white/10 text-xs text-white/60 flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i> Обработка может занять до 1–2 минут
+        </div>
+    </div>
+</div>
+
+<!-- Мобильная панель помощи -->
+<div class="lg:hidden fixed bottom-4 right-4 z-20">
+    <button id="mobileHelpToggle" class="p-3bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
+        <i class="fas fa-question text-white text-xl"></i>
+    </button>
+
+    <div id="mobileHelpCard" class="hidden absolute bottom-16 right-0 w-72 bg-gray-900/90 backdrop-blur-lg rounded-xl p-5 border border-purple-500/30 shadow-xl">
+        <div class="flex items-start mb-4">
+            <i class="fas fa-info-circle text-purple-300 text-xl mr-3"></i>
+            <h3 class="font-bold text-lg text-white">Как использовать</h3>
+        </div>
+        <ol class="list-decimal list-inside space-y-3 text-sm text-white/90">
+            <li>Загрузите <strong>файл с подписчиками</strong></li>
+            <li>Добавьте <strong>группы</strong> с метками</li>
+            <li>Нажмите <strong>"Классифицировать"</strong></li>
+            <li>Результат будет скачен автоматически</li>
+        </ol>
+        <div class="mt-4 pt-3 border-t border-white/10 text-xs text-white/60 flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i> Процесс может занять немного времени
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для панелей помощи -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const helpToggle = document.getElementById('helpToggle');
+    const helpCard = document.getElementById('helpCard');
+    helpToggle?.addEventListener('click', () => {
+        helpCard.classList.toggle('opacity-0');
+        helpCard.classList.toggle('-translate-x-10');
+    });
+
+    const mobileHelpToggle = document.getElementById('mobileHelpToggle');
+    const mobileHelpCard = document.getElementById('mobileHelpCard');
+    mobileHelpToggle?.addEventListener('click', () => {
+        mobileHelpCard.classList.toggle('hidden');
+    });
+});
+</script>
+
+<!-- Контент -->
+<div class="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 text-center text-white py-10">
+    <h1 class="text-4xl md:text-5xl font-extrabold drop-shadow-lg mb-6">Классификация подписчиков</h1>
+    <!-- Описание страницы -->
+    <p class="max-w-3xl text-slate-200 text-base md:text-lg bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-8 shadow">
+        На этой странице вы можете классифицировать список подписчиков по заданным категориям. 
+        Загрузите файл с пользователями, добавьте одну или несколько групп сравнения с метками — 
+        и система автоматически определит, к какой из групп каждый пользователь ближе всего.
+    </p>
+
+    <div class="w-full max-w-3xl grid gap-6 bg-white/10 backdrop-blur rounded-xl p-6 shadow-lg text-left">
+        <form method="post" enctype="multipart/form-data" id="classify-form" class="grid gap-4">
+
+            <!-- Подписчики -->
+            <div>
+                <label class="block text-sm font-medium text-slate-200 mb-1">Файл с подписчиками:</label>
+                <label class="upload-box relative">
+                    <input name="subscribers" type="file" class="sr-only" onchange="updateLabel(this)" required />
+                    <div class="flex flex-col items-center justify-center py-6 px-4">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <span class="upload-text">Перетащите файл сюда или нажмите для выбора</span>
+                        <span class="uploaded-text mt-2 hidden"></span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Контейнер групп -->
+            <div id="group-container" class="grid gap-6">
+                <div class="group-entry grid gap-2" data-index="1">
+                    <label class="block text-sm font-medium text-slate-200">Группа 1:</label>
+                    <label class="upload-box relative">
+                        <input name="group1" type="file" class="sr-only" onchange="updateLabel(this)" />
+                        <div class="flex flex-col items-center justify-center py-6 px-4">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <span class="upload-text">Перетащите файл сюда или нажмите для выбора</span>
+                            <span class="uploaded-text mt-2 hidden"></span>
+                        </div>
+                    </label>
+                    <input name="label1" type="text" placeholder="Метка для группы 1"
+                        class="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur text-white placeholder-slate-300 focus:ring-2 focus:ring-green-400" />
+                </div>
+            </div>
+
+            <!-- Кнопка добавления группы -->
+            <button type="button" id="add-group"
+                class="w-full py-2 border border-white text-white rounded-lg hover:bg-white/20 transition">
+                <i class="fas fa-plus mr-2"></i> Добавить группу
+            </button>
+
+            <!-- Кнопка классификации -->
+            <button type="submit" id="submit-btn"
+                   class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-purple-500/20 active:scale-[0.98] group">
+                <i class="fas fa-play mr-2"></i> Классифицировать
+            </button>
+        </form>
+    </div>
+
+    {% if table %}
+    <div class="w-full max-w-5xl mt-10 bg-white/10 backdrop-blur rounded-xl p-6 shadow-md text-left overflow-auto">
+        <h2 class="text-2xl font-bold mb-4">Результаты классификации</h2>
+        <table class="w-full text-sm text-white border-collapse">
+            <thead class="bg-white/5 text-slate-300">
+                <tr>
+                    {% for col in table.columns %}
+                    <th class="px-4 py-2 text-left">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table.values %}
+                <tr class="hover:bg-white/10 transition">
+                    {% for cell in row %}
+                    <td class="px-4 py-2 border-t border-white/10">{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Стили -->
+<style>
+.upload-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    border: 2px dashed white;
+    border-radius: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    position: relative;
+    text-align: center;
+}
+
+.upload-box.dragover {
+    border-color: #38bdf8;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.upload-icon {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 0.25rem;
+}
+
+.upload-text {
+    font-size: 0.875rem;
+    color: #cbd5e1;
+}
+
+.uploaded-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+}
+</style>
+
+<!-- Скрипты -->
+<script>
+function updateLabel(input) {
+    const fileName = input.files[0]?.name;
+    const wrapper = input.closest('.upload-box');
+    const nameSpan = wrapper.querySelector('.uploaded-text');
+    if (fileName) {
+        nameSpan.textContent = fileName;
+        nameSpan.classList.remove('hidden');
+    } else {
+        nameSpan.textContent = '';
+        nameSpan.classList.add('hidden');
+    }
+}
+
+function handleDragAndDrop(box) {
+    const input = box.querySelector('input[type="file"]');
+    box.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        box.classList.add('dragover');
+    });
+    box.addEventListener('dragleave', () => box.classList.remove('dragover'));
+    box.addEventListener('drop', (e) => {
+        e.preventDefault();
+        box.classList.remove('dragover');
+        input.files = e.dataTransfer.files;
+        updateLabel(input);
+    });
+}
+
+document.querySelectorAll('.upload-box').forEach(handleDragAndDrop);
+
+function renumberGroups() {
+    const entries = document.querySelectorAll('.group-entry');
+    entries.forEach((entry, index) => {
+        const newIndex = index + 1;
+        entry.setAttribute('data-index', newIndex);
+        entry.querySelector('label').textContent = `Группа ${newIndex}:`;
+        entry.querySelector('input[type="file"]').setAttribute('name', `group${newIndex}`);
+        const textInput = entry.querySelector('input[type="text"]');
+        textInput.setAttribute('name', `label${newIndex}`);
+        textInput.setAttribute('placeholder', `Метка для группы ${newIndex}`);
+    });
+}
+
+document.getElementById("add-group").addEventListener("click", () => {
+    const container = document.getElementById("group-container");
+    const newIndex = container.children.length + 1;
+
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "group-entry grid gap-2";
+    groupDiv.setAttribute("data-index", newIndex);
+
+    groupDiv.innerHTML = `
+        <label class="block text-sm font-medium text-slate-200">Группа ${newIndex}:</label>
+        <label class="upload-box relative">
+            <input name="group${newIndex}" type="file" class="sr-only" onchange="updateLabel(this)" />
+            <div class="flex flex-col items-center justify-center py-6 px-4">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <span class="upload-text">Перетащите файл сюда или нажмите для выбора</span>
+                <span class="uploaded-text mt-2 hidden"></span>
+            </div>
+        </label>
+        <input name="label${newIndex}" type="text" placeholder="Метка для группы ${newIndex}"
+               class="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur text-white placeholder-slate-300 focus:ring-2 focus:ring-green-400" />
+        <button type="button" class="remove-group py-2 px-4 mt-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition w-fit">
+            <i class="fas fa-trash mr-1"></i> Удалить группу
+        </button>
+    `;
+    container.appendChild(groupDiv);
+    handleDragAndDrop(groupDiv.querySelector('.upload-box'));
+});
+
+document.getElementById("group-container").addEventListener("click", (e) => {
+    if (e.target.closest(".remove-group")) {
+        const groupDiv = e.target.closest(".group-entry");
+        groupDiv.remove();
+        renumberGroups();
+    }
+});
+
+document.getElementById("classify-form").addEventListener("submit", function (e) {
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Обработка...';
+
+    let valid = true;
+    const entries = document.querySelectorAll(".group-entry");
+
+    entries.forEach(entry => {
+        const fileInput = entry.querySelector('input[type="file"]');
+        const labelInput = entry.querySelector('input[type="text"]');
+        const hasFile = fileInput && fileInput.files.length > 0;
+        const hasLabel = labelInput && labelInput.value.trim() !== "";
+
+        if ((hasFile && !hasLabel) || (!hasFile && hasLabel)) {
+            valid = false;
+            fileInput.parentElement.classList.add("ring-2", "ring-red-500");
+            labelInput.classList.add("ring-2", "ring-red-500");
+        } else {
+            fileInput.parentElement.classList.remove("ring-2", "ring-red-500");
+            labelInput.classList.remove("ring-2", "ring-red-500");
+        }
+    });
+
+    if (!valid) {
+        e.preventDefault();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play mr-2"></i> Классифицировать';
+        alert("Убедитесь, что для каждой группы заполнены и файл, и метка.");
+    }
+
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play mr-2"></i> Классифицировать';
+    }, 20000);
+});
+</script>
+{% endblock %}

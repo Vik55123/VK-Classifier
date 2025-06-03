@@ -1,0 +1,310 @@
+{% extends "app_base.html" %}
+
+{% block title %}Выгрузка по категориям — VK Classifier{% endblock %}
+
+{% block content %}
+<!-- Видеофон -->
+<video autoplay muted loop class="fixed top-0 left-0 w-full h-full object-cover z-0">
+    <source src="{{ url_for('static', filename='videos/v1.mp4') }}" type="video/mp4">
+</video>
+
+<!-- Затемнение фона -->
+<div class="fixed inset-0 bg-black/60 z-0"></div>
+
+<!-- Боковая панель помощи (десктоп) -->
+<div class="fixed left-4 top-1/2 transform -translate-y-1/2 z-20 hidden lg:block">
+    <button id="helpToggle" class="mb-2 p-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:bg-purple-700 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
+        <i class="fas fa-question text-white text-xl"></i>
+    </button>
+    
+    <div id="helpCard" class="w-72 bg-gray-900/90 backdrop-blur-lg rounded-xl p-5 border border-purple-500/30 shadow-xl transform transition-all duration-300 opacity-0 -translate-x-10">
+        <div class="flex items-start mb-4">
+            <i class="fas fa-info-circle text-purple-300 text-xl mr-3"></i>
+            <h3 class="font-bold text-lg text-white">Как использовать</h3>
+        </div>
+        <ol class="list-decimal list-inside space-y-3 text-sm text-white/90">
+            <li class="transition hover:text-purple-200 pl-1">Введите <strong>ID группы</strong> (цифры из URL) или короткое имя (например, https://vk.com/<strong>[imit_asu]</strong>)</li>
+            <li class="transition hover:text-purple-200 pl-1">Укажите <strong>возрастные параметры</strong> (диапазон или точный возраст)</li>
+            <li class="transition hover:text-purple-200 pl-1">Выберите <strong>дополнительные данные</strong> для экспорта</li>
+            <li class="transition hover:text-purple-200 pl-1">Нажмите <strong>"Скачать"</strong> - файл сохранится автоматически</li>
+        </ol>
+        <div class="mt-4 pt-3 border-t border-white/10 text-xs text-white/60 flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i> Для больших групп обработка может занять время, Доступно только для открытых сообществ
+        </div>
+    </div>
+</div>
+
+<!-- Мобильная панель помощи (появляется только на маленьких экранах) -->
+<div class="lg:hidden fixed bottom-4 right-4 z-20">
+    <button id="mobileHelpToggle" class="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
+        <i class="fas fa-question text-white text-xl"></i>
+    </button>
+    
+    <div id="mobileHelpCard" class="hidden absolute bottom-16 right-0 w-72 bg-gray-900/90 backdrop-blur-lg rounded-xl p-5 border border-purple-500/30 shadow-xl">
+        <div class="flex items-start mb-4">
+            <i class="fas fa-info-circle text-purple-300 text-xl mr-3"></i>
+            <h3 class="font-bold text-lg text-white">Как использовать</h3>
+        </div>
+        <ol class="list-decimal list-inside space-y-3 text-sm text-white/90">
+            <li class="transition hover:text-purple-200 pl-1">Введите <strong>ID группы</strong> (цифры из URL) или короткое имя (например, https://vk.com/<strong>[imit_asu]</strong>)</li>
+            <li class="transition hover:text-purple-200 pl-1">Укажите <strong>возрастные параметры</strong> (диапазон или точный возраст)</li>
+            <li class="transition hover:text-purple-200 pl-1">Выберите <strong>дополнительные данные</strong> для экспорта</li>
+            <li class="transition hover:text-purple-200 pl-1">Нажмите <strong>"Скачать"</strong> - файл сохранится автоматически</li>
+        </ol>
+        <div class="mt-4 pt-3 border-t border-white/10 text-xs text-white/60 flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i> Для больших групп обработка может занять время, Доступно только для открытых сообществ
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для работы панелей -->
+<script>
+    // Десктопная панель
+    const helpToggle = document.getElementById('helpToggle');
+    const helpCard = document.getElementById('helpCard');
+    
+    helpToggle.addEventListener('click', () => {
+        helpCard.classList.toggle('opacity-0');
+        helpCard.classList.toggle('-translate-x-10');
+    });
+
+    // Мобильная панель
+    const mobileHelpToggle = document.getElementById('mobileHelpToggle');
+    const mobileHelpCard = document.getElementById('mobileHelpCard');
+    
+    mobileHelpToggle.addEventListener('click', () => {
+        mobileHelpCard.classList.toggle('hidden');
+    });
+</script>
+
+<!-- Основной контент -->
+<div class="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+    <div class="w-full max-w-2xl mx-auto">
+        <!-- Заголовок -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+                <i class="fas fa-users-cog text-purple-300 mr-2"></i> Фильтрация 
+            </h1>
+            <p class="max-w-3xl text-slate-200 text-base md:text-lg bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-8 shadow">
+                Эта страница позволяет отфильтровать подписчиков выбранного сообщества ВКонтакте по возрасту, месту жительства, образованию, карьере и интересам. 
+                Просто укажите параметры фильтрации и скачайте готовый файл с соответствующими пользователями.
+            </p>
+            
+        </div>
+
+        <!-- Форма -->
+        <div class="backdrop-blur-sm bg-white/5 rounded-xl shadow-2xl border border-white/10 p-6 md:p-8">
+            <form method="POST" class="space-y-6" id="categoryForm">
+                <!-- Group ID -->
+                <div class="relative">
+                    <label class="block text-sm font-medium text-white/90 mb-2">
+                        ID или короткое имя группы
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="group_id" required
+                            class="w-full px-4 py-3 bg-black/30 text-white placeholder-white/50 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                            placeholder="например: public123456">
+                        <div class="absolute right-3 top-3 text-white/50 hover:text-white cursor-help tooltip" data-tooltip="Найдите ID в адресе страницы: vk.com/public[ID]">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Возраст -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Возрастной диапазон</label>
+                        <input type="text" name="age_range" id="ageRange"
+                            class="w-full px-4 py-3 bg-black/30 text-white placeholder-white/50 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                            placeholder="например: 18-25">
+                        <p id="ageError" class="text-red-400 text-xs mt-1 hidden">Формат: число-число (например 18-25)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Точный возраст</label>
+                        <input type="number" name="exact_age"
+                            class="w-full px-4 py-3 bg-black/30 text-white placeholder-white/50 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                            placeholder="например: 21" min="14" max="100">
+                    </div>
+                </div>
+
+                <!-- Чекбоксы -->
+                <fieldset class="border border-white/20 rounded-lg p-4 transition hover:border-purple-500/50">
+                    <legend class="px-2 text-sm font-medium text-white/90">Дополнительные поля</legend>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <label class="flex items-start space-x-3 group">
+                            <input type="checkbox" name="include_location" class="mt-1 form-checkbox text-purple-500 rounded border-white/30 focus:ring-purple-500 transition duration-150">
+                            <div>
+                                <span class="block text-white/90">Местоположение</span>
+                                <span class="text-xs text-white/60">Город и страна</span>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 group">
+                            <input type="checkbox" name="include_education" class="mt-1 form-checkbox text-purple-500 rounded border-white/30 focus:ring-purple-500 transition duration-150">
+                            <div>
+                                <span class="block text-white/90">Образование</span>
+                                <span class="text-xs text-white/60">Университеты и школы</span>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 group">
+                            <input type="checkbox" name="include_career" class="mt-1 form-checkbox text-purple-500 rounded border-white/30 focus:ring-purple-500 transition duration-150">
+                            <div>
+                                <span class="block text-white/90">Карьера</span>
+                                <span class="text-xs text-white/60">Места работы</span>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 group">
+                            <input type="checkbox" name="include_interests" class="mt-1 form-checkbox text-purple-500 rounded border-white/30 focus:ring-purple-500 transition duration-150">
+                            <div>
+                                <span class="block text-white/90">Интересы</span>
+                                <span class="text-xs text-white/60">Указанные в профиле</span>
+                            </div>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- Кнопка -->
+                <button type="submit" id="submitBtn"
+                    class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-purple-500/20 active:scale-[0.98] group">
+                    <i class="fas fa-file-export mr-2 group-hover:scale-110 transition-transform"></i>
+                    <span id="btnText">Скачать</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Стили -->
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .tooltip {
+        position: relative;
+    }
+    
+    .tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 100;
+        margin-bottom: 8px;
+    }
+    
+    button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        background: #6B46C1 !important;
+    }
+    
+    #helpCard {
+        will-change: transform, opacity;
+    }
+    
+    #helpToggle:hover + #helpCard,
+    #helpCard:hover {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .form-checkbox {
+        transition: all 0.2s ease;
+    }
+    
+    .form-checkbox:checked {
+        transform: scale(1.1);
+    }
+</style>
+
+<!-- Скрипты -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Боковая панель помощи
+        const helpToggle = document.getElementById('helpToggle');
+        const helpCard = document.getElementById('helpCard');
+        
+        helpToggle.addEventListener('click', () => {
+            helpCard.classList.toggle('opacity-0');
+            helpCard.classList.toggle('-translate-x-10');
+        });
+        
+        // Валидация возраста
+        const ageInput = document.getElementById('ageRange');
+        const ageError = document.getElementById('ageError');
+        
+        ageInput.addEventListener('input', (e) => {
+            if (!/^\d*-\d*$/.test(e.target.value) && e.target.value !== '') {
+                e.target.classList.add('border-red-500');
+                ageError.classList.remove('hidden');
+            } else {
+                e.target.classList.remove('border-red-500');
+                ageError.classList.add('hidden');
+            }
+        });
+        
+        // Обработка формы
+        const form = document.getElementById('categoryForm');
+        const btn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Валидация
+            if (ageInput.value && !/^\d+-\d+$/.test(ageInput.value)) {
+                ageInput.classList.add('border-red-500');
+                ageError.classList.remove('hidden');
+                return;
+            }
+            
+            // Сохраняем оригинальный текст
+            const originalText = btnText.innerText;
+            const originalIcon = btn.querySelector('i').className;
+            
+            // Меняем состояние кнопки
+            btn.disabled = true;
+            btnText.innerText = 'Подготовка данных...';
+            btn.querySelector('i').className = 'fas fa-spinner fa-spin mr-2';
+            
+            // Отправляем форму
+            fetch(form.action, {
+                method: form.method,
+                body: new FormData(form)
+            })
+            .then(response => {
+                if (response.ok) return response.blob();
+                throw new Error('Ошибка загрузки');
+            })
+            .then(blob => {
+                // Создаем ссылку для скачивания
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'vk_audience_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при выгрузке данных');
+            })
+            .finally(() => {
+                // Восстанавливаем кнопку
+                btn.disabled = false;
+                btnText.innerText = originalText;
+                btn.querySelector('i').className = originalIcon;
+            });
+        });
+    });
+</script>
+{% endblock %}

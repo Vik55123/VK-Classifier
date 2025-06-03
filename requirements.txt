@@ -1,0 +1,9 @@
+flask
+pandas
+vk-api
+openpyxl
+rapidfuzz
+requests
+transliterate
+matplotlib
+nltk

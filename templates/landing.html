@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>VK Classifier - Анализ аудитории</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            600: '#2563EB',
+                            700: '#1D4ED8',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+        }
+        .overlay {
+            background: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="relative h-screen overflow-hidden">
+    <!-- Видеофон -->
+    <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
+        <source src="{{ url_for('static', filename='videos/v1.mp4') }}" type="video/mp4">
+        Ваш браузер не поддерживает видео фон.
+    </video>
+<!-- Затемнение для читаемости -->
+<div class="fixed inset-0 bg-black bg-opacity-60 z-0"></div>
+    <!-- Контент поверх -->
+    <section class="hero flex items-center justify-center px-4 h-full relative z-20">
+        <div class="text-center max-w-2xl text-white">
+            <div class="mb-8 animate-slide-up">
+                <a href="/app" class="logo-link inline-flex items-center text-3xl font-bold text-white">
+                    <i class="fab fa-vk text-blue-400 mr-3"></i>
+                    VK Classifier
+                </a>
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 animate-slide-up" style="animation-delay: 0.1s">
+                Узнай свою аудиторию
+            </h1>
+            
+            <p class="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed animate-slide-up" style="animation-delay: 0.2s">
+                Получите более глубокое понимание участников вашей группы ВКонтакте.<br>
+                Проанализируйте их демографические данные, интересы и поведение, чтобы улучшить свои маркетинговые стратегии.
+            </p>
+            
+            <a href="/app"
+            class="btn-analyze inline-block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg animate-slide-up ring-2 ring-white/10 hover:ring-white/20 transition duration-300"
+            style="animation-delay: 0.3s">
+            🚀 Начать анализ
+            </a>
+        </div>
+    </section>
+
+    <script>
+        // Плавный переход
+        document.querySelectorAll('a[href="/app"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.body.style.opacity = '0';
+                setTimeout(() => {
+                    window.location.href = '/app';
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>
