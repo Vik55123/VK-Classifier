@@ -20,7 +20,7 @@ import vk_api
 import io
 
 
-#http://127.0.0.1:5000/classify
+#http://127.0.0.1:10000
 #python -m venv venv
 #venv\Scripts\activate
 #pip install -r requirements.txt
